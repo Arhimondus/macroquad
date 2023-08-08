@@ -76,6 +76,8 @@ pub struct AnimationFrame {
     pub source_rect: Rect,
     /// Size of frame
     pub dest_size: Vec2,
+	/// Current frame index
+	pub frame: u32,
 }
 
 /// Main definition of all animations for specific image
@@ -88,6 +90,7 @@ pub struct AnimatedSprite {
     current_animation: usize,
     time: f32,
     frame: u32,
+	pub repeat: bool,
     /// Controls if frame should be updated on [update][Self::update]
     pub playing: bool,
 }
@@ -97,6 +100,7 @@ impl AnimatedSprite {
         tile_width: u32,
         tile_height: u32,
         animations: &[Animation],
+		repeat: bool,
         playing: bool,
     ) -> AnimatedSprite {
         AnimatedSprite {
@@ -106,18 +110,23 @@ impl AnimatedSprite {
             current_animation: 0,
             time: 0.0,
             frame: 0,
+			repeat,
             playing,
         }
     }
 
-    /// Choose animation to display
-    ///
-    /// **Note:** the animations is not reset when switching, for this use [set_frame][Self::set_frame]
+     /// If it is a last frame of current animation
+    pub fn is_last_frame(&mut self) -> bool {
+		let animation = &self.animations[self.current_animation];
+		self.frame == animation.frames - 1
+	}
+
+    /// Choose animation to display and reset frame to 0
     pub fn set_animation(&mut self, animation: usize) {
         self.current_animation = animation;
 
         let animation = &self.animations[self.current_animation];
-        self.frame %= animation.frames;
+        self.frame = 0;
     }
 
     /// Currently chosen animation
@@ -144,6 +153,11 @@ impl AnimatedSprite {
             }
         }
         self.frame %= animation.frames;
+		if !self.repeat {
+			if self.is_last_frame() {
+				self.playing = false;
+			}
+		}
     }
 
     /// Get current frame
@@ -158,6 +172,7 @@ impl AnimatedSprite {
                 self.tile_height,
             ),
             dest_size: vec2(self.tile_width, self.tile_height),
+            frame: self.frame,
         }
     }
 }
